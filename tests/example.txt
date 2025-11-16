@@ -1,0 +1,2 @@
+This is some text for testing purposes.
+It does not have specific meaning, just exists to test how the AI document bot works.
