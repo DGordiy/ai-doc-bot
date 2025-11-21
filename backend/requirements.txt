@@ -4,3 +4,8 @@ requests
 python-dotenv
 pdfminer.six
 python-docx
+faiss-cpu
+numpy
+openai
+sentence-transformers
+langchain-text-splitters
