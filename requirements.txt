@@ -9,6 +9,8 @@ numpy
 openai
 groq
 sentence-transformers
-voyage
 langchain-text-splitters
 logging
+pytest
+pytest-cov
+pytest-dotenv
