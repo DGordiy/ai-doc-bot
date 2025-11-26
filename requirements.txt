@@ -7,5 +7,10 @@ python-docx
 faiss-cpu
 numpy
 openai
+groq
 sentence-transformers
 langchain-text-splitters
+logging
+pytest
+pytest-cov
+pytest-dotenv
