@@ -30,6 +30,7 @@ jobs:
         run: |
           pytest -v
         env:
+          PYTHONWARNINGS: "ignore::DeprecationWarning"
           PYTHONPATH: ${{ github.workspace }}
           VECTOR_DIM: 384
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
