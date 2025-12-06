@@ -1,3 +1,6 @@
+from backend.services.utils import truncate_text
+
+
 def build_rag_context(results: list[dict], max_total_chars: int = 3000) -> str:
     context_parts = []
     total_chars = 0
@@ -19,9 +22,3 @@ def build_rag_context(results: list[dict], max_total_chars: int = 3000) -> str:
         total_chars += block_len
 
     return "\n\n---\n\n".join(context_parts)
-
-
-def truncate_text(text: str, max_chars: int = 500) -> str:
-    if len(text) <= max_chars:
-        return text
-    return text[:max_chars] + "..."
