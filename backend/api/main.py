@@ -22,7 +22,7 @@ app = FastAPI(
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-DOCS_FOLDER = (BASE_DIR / "../../tests/samples").resolve()
+DOCS_FOLDER = (BASE_DIR / "../../data/samples").resolve()
 UPLOAD_DIR = (BASE_DIR / "../../data/uploads").resolve()
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -37,8 +37,6 @@ llm_client = GroqLLMClient()
 # -------------------------------------
 
 app.state.vector_store = VectorStore(dim=VECTOR_DIM)
-
-vs = app.state.vector_store
 
 
 # -------------------------------------
@@ -59,7 +57,7 @@ def index_file(file_path: Path):
         for i in range(len(chunks))
     ]
 
-    vs.add_texts(chunks, embeddings, metadata)
+    app.state.vector_store.add_texts(chunks, embeddings, metadata)
 
 
 # -------------------------------------
@@ -72,7 +70,7 @@ if not DOCS_FOLDER.exists():
 for file_path in DOCS_FOLDER.iterdir():
     index_file(file_path)
 
-rag_service = RAGService(emb_client, llm_client, vs)
+rag_service = RAGService(emb_client, llm_client, app.state.vector_store)
 
 
 # ----------------------
@@ -109,7 +107,7 @@ async def search_docs(req: QuestionRequest):
         raise HTTPException(400, "Query cannot be empty")
 
     query_vector = emb_client.get_embeddings(req.question)
-    results = vs.search(query_vector, top_k=req.top_k)
+    results = app.state.vector_store.search(query_vector, top_k=req.top_k)
 
     formatted = [
         SearchResponseItem(
@@ -135,13 +133,14 @@ async def rag_answer(req: QuestionRequest):
 
 @app.get("/list_documents")
 async def list_documents():
-    files = sorted({m["file"] for m in vs.metadata})
+    files = sorted({m["file"] for m in app.state.vector_store.metadata})
     return {"documents": files}
 
 
 @app.get("/debug/chunks")
 async def debug_chunks(file: str):
     chunks = []
+    vs = app.state.vector_store
     for text, meta in zip(vs.texts, vs.metadata):
         if meta["file"] == file:
             chunks.append({
@@ -177,6 +176,28 @@ async def upload_file(file: UploadFile):
         "file": file.filename,
         "indexed": True
     }
+
+
+@app.delete("/delete_file")
+async def delete_file(filename: str):
+    # full path to file
+    file_path = UPLOAD_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(404, f"File '{filename}' not found in uploads")
+
+    # remove file
+    file_path.unlink()
+
+    # rebuild index
+    app.state.vector_store = VectorStore(dim=VECTOR_DIM)
+
+    # reindex test docs + uploaded docs
+    for folder in [DOCS_FOLDER, UPLOAD_DIR]:
+        for f in folder.iterdir():
+            index_file(f)
+
+    return {"status": "deleted", "file": filename}
 
 
 @app.post("/rebuild_index")
